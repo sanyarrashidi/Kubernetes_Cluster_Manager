@@ -9,13 +9,11 @@ from django.http import HttpResponse
 clusters_total = Gauge(
     "kubefleet_clusters_total",
     "Number of registered clusters",
-    ["resource"],
 )
 
 namespaces_total = Gauge(
     "kubefleet_namespaces_total",
     "Number of namespaces across all clusters",
-    ["resource"],
 )
 
 apps_by_status = Gauge(
