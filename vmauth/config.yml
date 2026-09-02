@@ -1,8 +1,8 @@
 users:
   - username: grafana
-    password: n8RfaZ49P@9hYMf
+    password: "%{VMAUTH_VMAGENT_PASSWORD}"
     url_prefix: http://victoriametrics:8428
 
   - username: vmagent
-    password: n8RfaZ49P@9hYMf
+    password: "%{VMAUTH_GRAFANA_PASSWORD}"
     url_prefix: http://victoriametrics:8428

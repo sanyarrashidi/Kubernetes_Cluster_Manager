@@ -90,6 +90,9 @@ services:
       - "-auth.config=/etc/vmauth/config.yml"
     volumes:
       - ./vmauth/config.yml:/etc/vmauth/config.yml:ro
+    environment:
+      VMAUTH_VMAGENT_PASSWORD: ${VMAUTH_VMAGENT_PASSWORD}
+      VMAUTH_GRAFANA_PASSWORD: ${VMAUTH_GRAFANA_PASSWORD}
     ports:
       - "8427:8427"
     depends_on:
