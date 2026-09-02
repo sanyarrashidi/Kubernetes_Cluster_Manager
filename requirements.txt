@@ -1,0 +1,10 @@
+django
+daphne
+channels
+channels_redis
+celery
+redis
+kubernetes
+django-celery-beat
+django-cors-headers
+prometheus-client

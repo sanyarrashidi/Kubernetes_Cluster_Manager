@@ -1,0 +1,408 @@
+# ============================================================
+
+# HAMBACKEND - Git Ignore
+
+# ============================================================
+
+# ------------------------------------------------------------
+
+# Environment variables & secrets
+
+# ------------------------------------------------------------
+
+.env
+.env.*
+!.env.example
+
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+
+# Secret/config files that may contain credentials
+
+secrets/
+secret/
+credentials/
+*.secret
+*.credentials
+
+# ------------------------------------------------------------
+
+# Python
+
+# ------------------------------------------------------------
+
+**pycache**/
+*.py[cod]
+*$py.class
+
+*.so
+
+# Python build / packaging
+
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Distribution metadata
+
+pip-wheel-metadata/
+
+# Coverage
+
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+
+# Type checking
+
+.mypy_cache/
+.pyre/
+.pytype/
+.ruff_cache/
+
+# Profiling
+
+.prof
+*.prof
+
+# Jupyter
+
+.ipynb_checkpoints/
+
+# ------------------------------------------------------------
+
+# Virtual environments
+
+# ------------------------------------------------------------
+
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ------------------------------------------------------------
+
+# Django
+
+# ------------------------------------------------------------
+
+# Local database
+
+db.sqlite3
+db.sqlite3-journal
+
+# Django generated files
+
+*.log
+
+# Static/media files generated locally
+
+staticfiles/
+media/
+
+# Local Django settings
+
+local_settings.py
+
+# ------------------------------------------------------------
+
+# Celery
+
+# ------------------------------------------------------------
+
+celerybeat-schedule
+celerybeat-schedule.db
+celerybeat.pid
+
+# ------------------------------------------------------------
+
+# Redis
+
+# ------------------------------------------------------------
+
+dump.rdb
+appendonly.aof
+
+# Redis local data directories
+
+redis-data/
+redis/
+
+# ------------------------------------------------------------
+
+# Docker
+
+# ------------------------------------------------------------
+
+# Docker local volumes / persistent data
+
+docker-data/
+docker-volumes/
+
+# Docker override files are normally developer-specific
+
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Docker logs
+
+docker-logs/
+*.docker.log
+
+# ------------------------------------------------------------
+
+# VictoriaMetrics
+
+# ------------------------------------------------------------
+
+# Never commit actual time-series database data
+
+victoriametrics-data/
+victoria-metrics-data/
+
+# If mounted as a local directory
+
+victoriametrics/data/
+victoria-metrics/data/
+
+# VM temporary files
+
+*.vmcache
+*.vmdelta
+*.vmbackup
+
+# Local VM logs
+
+victoriametrics/*.log
+
+# ------------------------------------------------------------
+
+# vmagent
+
+# ------------------------------------------------------------
+
+# Local vmagent data/cache
+
+vmagent-data/
+vmagent/data/
+
+# vmagent temporary files
+
+vmagent/*.log
+
+# ------------------------------------------------------------
+
+# vmauth
+
+# ------------------------------------------------------------
+
+# Local vmauth data/cache
+
+vmauth-data/
+vmauth/data/
+
+# Never commit local auth/config containing credentials
+
+vmauth/*.secret
+vmauth/*.credentials
+
+# ------------------------------------------------------------
+
+# Grafana
+
+# ------------------------------------------------------------
+
+# Grafana persistent database/data
+
+grafana-data/
+grafana/data/
+
+# Grafana local database
+
+grafana.db
+
+# Grafana logs
+
+grafana/logs/
+grafana/*.log
+
+# Grafana plugins installed locally
+
+grafana/plugins/
+
+# ------------------------------------------------------------
+
+# Kubernetes
+
+# ------------------------------------------------------------
+
+# Local kubeconfig
+
+.kube/
+kubeconfig
+kubeconfig.*
+*.kubeconfig
+
+# Kubernetes generated/local files
+
+*.k8s.local.yaml
+*.k8s.local.yml
+
+# Minikube
+
+.minikube/
+
+# ------------------------------------------------------------
+
+# IDEs
+
+# ------------------------------------------------------------
+
+# VS Code
+
+.vscode/
+*.code-workspace
+
+# JetBrains / IntelliJ / PyCharm
+
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Eclipse
+
+.classpath
+.project
+.settings/
+
+# Sublime
+
+*.sublime-project
+*.sublime-workspace
+
+# ------------------------------------------------------------
+
+# Operating systems
+
+# ------------------------------------------------------------
+
+# macOS
+
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+
+*~
+.directory
+
+# ------------------------------------------------------------
+
+# Logs
+
+# ------------------------------------------------------------
+
+*.log
+logs/
+log/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ------------------------------------------------------------
+
+# Temporary files
+
+# ------------------------------------------------------------
+
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.backup
+*.orig
+
+.tmp/
+temp/
+tmp/
+
+# ------------------------------------------------------------
+
+# Node / frontend (if frontend is added later)
+
+# ------------------------------------------------------------
+
+node_modules/
+.npm/
+.yarn/
+.pnpm-store/
+
+dist/
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+
+# ------------------------------------------------------------
+
+# Test / local tooling
+
+# ------------------------------------------------------------
+
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+.pyright/
+.pyrightconfig
+
+# ------------------------------------------------------------
+
+# Miscellaneous
+
+# ------------------------------------------------------------
+
+*.dump
+*.sqlite
+*.sqlite3
+
+# Local exports
+
+exports/
+backups/
+
+# Temporary archives
+
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.rar
+*.bak
+*.old
+

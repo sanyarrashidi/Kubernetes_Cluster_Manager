@@ -1,0 +1,101 @@
+services:
+  api:
+    build: .
+    container_name: django-api
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      MOCK_METRICS: "true"
+    depends_on:
+      - redis
+
+  celery:
+    build: .
+    container_name: celery-worker
+    command: celery -A hambackend worker --loglevel=info
+    volumes:
+      - .:/app
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      - redis
+
+  celery-beat:
+    build: .
+    container_name: celery-beat
+    command: celery -A hambackend beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - .:/app
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+
+  vmagent:
+    image: victoriametrics/vmagent:latest
+    container_name: vmagent
+    command:
+      - "-promscrape.config=/etc/vmagent/prometheus.yml"
+      - "-remoteWrite.url=http://vmauth:8427/api/v1/write"
+      - "-remoteWrite.basicAuth.username=vmagent"
+      - "-remoteWrite.basicAuth.password=${VMAUTH_VMAGENT_PASSWORD}"
+      - "-remoteWrite.tmpDataPath=/vmagent-remotewrite-data"
+    volumes:
+      - ./vmagent/prometheus.yml:/etc/vmagent/prometheus.yml:ro
+      - vmagent-data:/vmagent-remotewrite-data
+    ports:
+      - "8429:8429"
+    depends_on:
+      - api
+      - victoriametrics
+
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:latest
+    container_name: victoriametrics
+    command:
+      - "-storageDataPath=/victoria-metrics-data"
+    volumes:
+      - victoriametrics-data:/victoria-metrics-data
+    depends_on:
+      - api
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+    depends_on:
+      - victoriametrics
+
+  vmauth:
+    image: victoriametrics/vmauth:latest
+    container_name: vmauth
+    command:
+      - "-auth.config=/etc/vmauth/config.yml"
+    volumes:
+      - ./vmauth/config.yml:/etc/vmauth/config.yml:ro
+    ports:
+      - "8427:8427"
+    depends_on:
+      - victoriametrics
+
+volumes:
+  victoriametrics-data:
+  grafana-data:
+  vmagent-data:

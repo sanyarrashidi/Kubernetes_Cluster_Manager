@@ -1,0 +1,64 @@
+# Workshop foundation only. Students create VMSingle and VMAgent themselves.
+vmsingle:
+  enabled: true
+
+vmcluster:
+  enabled: false
+
+vmdistributed:
+  enabled: false
+
+vmagent:
+  enabled: true
+
+vmalert:
+  enabled: false
+
+alertmanager:
+  enabled: false
+
+grafana:
+  enabled: true
+  persistence:
+    enabled: false
+
+prometheus-node-exporter:
+  enabled: true
+
+kube-state-metrics:
+  enabled: true
+
+defaultDashboards:
+  enabled: true
+  sources:
+    victoriametrics-single-node:
+      enabled: true
+    victoriametrics-vmagent:
+      enabled: true
+
+defaultRules:
+  enabled: false
+
+vlsingle:
+  enabled: false
+
+vlcluster:
+  enabled: false
+
+vldistributed:
+  enabled: false
+
+vlagent:
+  enabled: false
+
+vtsingle:
+  enabled: false
+
+vtcluster:
+  enabled: false
+
+vtdistributed:
+  enabled: false
+
+vmauth:
+  enabled: false
