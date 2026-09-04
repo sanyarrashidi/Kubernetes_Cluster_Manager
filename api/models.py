@@ -5,6 +5,7 @@ class Cluster(models.Model):
     name = models.TextField()
     address = models.TextField()
     token = models.TextField(default="")
+    ca_cert = models.TextField(default="", blank=True)
 
     def __str__(self):
         return self.name
@@ -20,7 +21,7 @@ class Namespace(models.Model):
 
     def __str__(self):
         return self.name
-    
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
@@ -28,7 +29,8 @@ class Namespace(models.Model):
                 name="unique_namespace_per_cluster",
             )
         ]
-        
+
+
 class App(models.Model):
     name = models.CharField(max_length=255)
     namespace = models.ForeignKey(
@@ -43,7 +45,8 @@ class App(models.Model):
 
     def __str__(self):
         return self.name
-    
+
+
 class Backup(models.Model):
     STATUS_CHOICES = [
         ("pending", "Pending"),

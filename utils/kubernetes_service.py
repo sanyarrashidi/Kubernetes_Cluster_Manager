@@ -1,38 +1,44 @@
 import json
+import os
+import tempfile
 import uuid
 
-from kubernetes import client, stream
+from kubernetes import client
+from kubernetes.stream import stream
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
 
-def get_kubernetes_api(cluster):
+def _build_api_client(cluster):
     configuration = client.Configuration()
-
     configuration.host = f"https://{cluster.address}"
 
-    configuration.cert_file = "/app/client.crt"
-    configuration.key_file = "/app/client.key"
+    if not cluster.token:
+        raise ValueError(f"Cluster '{cluster.name}' has no token configured")
 
-    configuration.verify_ssl = False
+    configuration.api_key = {"authorization": cluster.token}
+    configuration.api_key_prefix = {"authorization": "Bearer"}
 
-    api_client = client.ApiClient(configuration)
+    if cluster.ca_cert:
+        ca_file = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".crt", delete=False
+        )
+        ca_file.write(cluster.ca_cert)
+        ca_file.close()
 
-    return client.CoreV1Api(api_client)
+        configuration.ssl_ca_cert = ca_file.name
+        configuration.verify_ssl = True
+    else:
+        configuration.verify_ssl = False
+
+    return client.ApiClient(configuration)
+
+
+def get_kubernetes_api(cluster):
+    return client.CoreV1Api(_build_api_client(cluster))
 
 
 def get_kubernetes_apps_api(cluster):
-    configuration = client.Configuration()
-
-    configuration.host = f"https://{cluster.address}"
-
-    configuration.cert_file = "/app/client.crt"
-    configuration.key_file = "/app/client.key"
-
-    configuration.verify_ssl = False
-
-    api_client = client.ApiClient(configuration)
-
-    return client.AppsV1Api(api_client)
+    return client.AppsV1Api(_build_api_client(cluster))
 
 
 def create_namespace(cluster, namespace_name):
@@ -205,8 +211,6 @@ def delete_app(app):
         name=app.name,
         namespace=app.namespace.name
     )
-    
-from kubernetes.stream import stream
 
 
 def get_app_pod(app):
@@ -254,7 +258,8 @@ def copy_file_from_pod(app, pod_name, source_path, destination_path):
                     raise Exception(f"Error copying from pod: {error_output}")
 
     resp.close()
-    
+
+
 def create_periodic_backup(app, source_path, schedule):
     fields = schedule.split()
 

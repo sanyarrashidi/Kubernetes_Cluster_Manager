@@ -30,7 +30,23 @@ def clusters(request):
                 name=data["name"],
                 address=data["address"],
                 token=data["token"],
+                ca_cert=data.get("ca_cert", ""),
             )
+
+            try:
+                test_connection(cluster)
+            except ApiException as error:
+                cluster.delete()
+                return JsonResponse(
+                    {"error": f"Could not connect to cluster: {error.reason}"},
+                    status=400,
+                )
+            except Exception as error:
+                cluster.delete()
+                return JsonResponse(
+                    {"error": f"Could not connect to cluster: {error}"},
+                    status=400,
+                )
 
             return JsonResponse(
                 {
@@ -255,13 +271,34 @@ def start_task(request):
     
 @csrf_exempt
 def test_connection_view(request):
-    cluster = Cluster.objects.get(id=1)
-    namespaces = test_connection(cluster)
-    
+    cluster_id = request.GET.get("cluster_id")
+
+    if not cluster_id:
+        return JsonResponse(
+            {"error": "Missing query param: cluster_id"},
+            status=400,
+        )
+
+    try:
+        cluster = Cluster.objects.get(id=cluster_id)
+    except Cluster.DoesNotExist:
+        return JsonResponse(
+            {"error": "Cluster not found"},
+            status=404,
+        )
+
+    try:
+        namespaces = test_connection(cluster)
+    except ApiException as error:
+        return JsonResponse(
+            {"error": f"Could not connect to cluster: {error.reason}"},
+            status=502,
+        )
+
     data = {
         "namespaces": [namespace.metadata.name for namespace in namespaces.items]
     }
-    
+
     return JsonResponse(data)
     
 @csrf_exempt
