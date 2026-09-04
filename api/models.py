@@ -4,8 +4,7 @@ from django.db import models
 class Cluster(models.Model):
     name = models.TextField()
     address = models.TextField()
-    token = models.TextField(default="")
-    ca_cert = models.TextField(default="", blank=True)
+    token = models.TextField()
 
     def __str__(self):
         return self.name
@@ -15,7 +14,7 @@ class Namespace(models.Model):
     cluster = models.ForeignKey(
         Cluster,
         on_delete=models.CASCADE,
-        related_name="namespaces"
+        related_name="namespaces",
     )
     name = models.TextField()
 
@@ -57,43 +56,52 @@ class Backup(models.Model):
 
     backup_id = models.CharField(
         max_length=100,
-        unique=True
+        unique=True,
     )
+
     app = models.ForeignKey(
         App,
         on_delete=models.CASCADE,
-        related_name="backups"
+        related_name="backups",
     )
+
     source_path = models.CharField(max_length=1000)
+
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        default="pending"
+        default="pending",
     )
+
     file_path = models.CharField(
         max_length=1000,
         blank=True,
-        null=True
+        null=True,
     )
+
     schedule = models.CharField(
         max_length=100,
         blank=True,
-        null=True
+        null=True,
     )
+
     error_message = models.TextField(
         blank=True,
-        null=True
+        null=True,
     )
+
     created_at = models.DateTimeField(
-        auto_now_add=True
+        auto_now_add=True,
     )
+
     started_at = models.DateTimeField(
         blank=True,
-        null=True
+        null=True,
     )
+
     completed_at = models.DateTimeField(
         blank=True,
-        null=True
+        null=True,
     )
 
     def __str__(self):

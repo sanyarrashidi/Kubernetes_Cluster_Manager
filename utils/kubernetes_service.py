@@ -1,6 +1,4 @@
 import json
-import os
-import tempfile
 import uuid
 
 from kubernetes import client
@@ -10,35 +8,39 @@ from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
 def _build_api_client(cluster):
     configuration = client.Configuration()
+
     configuration.host = f"https://{cluster.address}"
 
     if not cluster.token:
-        raise ValueError(f"Cluster '{cluster.name}' has no token configured")
-
-    configuration.api_key = {"authorization": cluster.token}
-    configuration.api_key_prefix = {"authorization": "Bearer"}
-
-    if cluster.ca_cert:
-        ca_file = tempfile.NamedTemporaryFile(
-            mode="w", suffix=".crt", delete=False
+        raise ValueError(
+            f"Cluster '{cluster.name}' has no token configured"
         )
-        ca_file.write(cluster.ca_cert)
-        ca_file.close()
 
-        configuration.ssl_ca_cert = ca_file.name
-        configuration.verify_ssl = True
-    else:
-        configuration.verify_ssl = False
+    token = cluster.token.strip()
+
+    if token.lower().startswith("bearer "):
+        token = token[7:].strip()
+
+    configuration.api_key = {
+        "authorization": f"Bearer {token}"
+    }
+
+    configuration.api_key_prefix = {}
+    configuration.verify_ssl = False
 
     return client.ApiClient(configuration)
 
 
 def get_kubernetes_api(cluster):
-    return client.CoreV1Api(_build_api_client(cluster))
+    return client.CoreV1Api(
+        _build_api_client(cluster)
+    )
 
 
 def get_kubernetes_apps_api(cluster):
-    return client.AppsV1Api(_build_api_client(cluster))
+    return client.AppsV1Api(
+        _build_api_client(cluster)
+    )
 
 
 def create_namespace(cluster, namespace_name):
@@ -50,7 +52,9 @@ def create_namespace(cluster, namespace_name):
         )
     )
 
-    return api.create_namespace(body=namespace)
+    return api.create_namespace(
+        body=namespace
+    )
 
 
 def delete_namespace(cluster, namespace_name):
@@ -68,7 +72,9 @@ def test_connection(cluster):
 
 
 def create_app(app):
-    api = get_kubernetes_apps_api(app.namespace.cluster)
+    api = get_kubernetes_apps_api(
+        app.namespace.cluster
+    )
 
     deployment = client.V1Deployment(
         metadata=client.V1ObjectMeta(
@@ -95,32 +101,34 @@ def create_app(app):
                             resources=client.V1ResourceRequirements(
                                 requests={
                                     "cpu": app.cpu,
-                                    "memory": app.memory
+                                    "memory": app.memory,
                                 },
                                 limits={
                                     "cpu": app.cpu,
-                                    "memory": app.memory
-                                }
-                            )
+                                    "memory": app.memory,
+                                },
+                            ),
                         )
                     ]
-                )
-            )
-        )
+                ),
+            ),
+        ),
     )
 
     return api.create_namespaced_deployment(
         namespace=app.namespace.name,
-        body=deployment
+        body=deployment,
     )
 
 
 def get_app_status(app):
-    api = get_kubernetes_api(app.namespace.cluster)
+    api = get_kubernetes_api(
+        app.namespace.cluster
+    )
 
     pods = api.list_namespaced_pod(
         namespace=app.namespace.name,
-        label_selector=f"app={app.name}"
+        label_selector=f"app={app.name}",
     )
 
     total = len(pods.items)
@@ -136,89 +144,116 @@ def get_app_status(app):
 
     return {
         "total": total,
-        "ready": ready
+        "ready": ready,
     }
 
 
 def list_app_pods(app):
-    api = get_kubernetes_api(app.namespace.cluster)
+    api = get_kubernetes_api(
+        app.namespace.cluster
+    )
 
     pods = api.list_namespaced_pod(
         namespace=app.namespace.name,
-        label_selector=f"app={app.name}"
+        label_selector=f"app={app.name}",
     )
 
     result = []
 
     for pod in pods.items:
-        container_statuses = pod.status.container_statuses or []
-        ready_count = sum(1 for c in container_statuses if c.ready)
+        container_statuses = (
+            pod.status.container_statuses or []
+        )
 
-        result.append({
-            "name": pod.metadata.name,
-            "phase": pod.status.phase,
-            "ready": ready_count,
-            "total": len(container_statuses),
-        })
+        ready_count = sum(
+            1
+            for container in container_statuses
+            if container.ready
+        )
+
+        result.append(
+            {
+                "name": pod.metadata.name,
+                "phase": pod.status.phase,
+                "ready": ready_count,
+                "total": len(container_statuses),
+            }
+        )
 
     return result
 
 
 def update_app(app):
-    api = get_kubernetes_apps_api(app.namespace.cluster)
+    api = get_kubernetes_apps_api(
+        app.namespace.cluster
+    )
 
     deployment = api.read_namespaced_deployment(
         name=app.name,
-        namespace=app.namespace.name
+        namespace=app.namespace.name,
     )
 
     deployment.spec.replicas = app.replicas
 
-    deployment.spec.strategy = client.V1DeploymentStrategy(
-        type="RollingUpdate",
-        rolling_update=client.V1RollingUpdateDeployment(
-            max_surge=0,
-            max_unavailable=1,
-        ),
+    deployment.spec.strategy = (
+        client.V1DeploymentStrategy(
+            type="RollingUpdate",
+            rolling_update=client.V1RollingUpdateDeployment(
+                max_surge=0,
+                max_unavailable=1,
+            ),
+        )
     )
 
-    container = deployment.spec.template.spec.containers[0]
+    container = (
+        deployment
+        .spec
+        .template
+        .spec
+        .containers[0]
+    )
 
     container.image = app.image
 
-    container.resources = client.V1ResourceRequirements(
-        requests={
-            "cpu": app.cpu,
-            "memory": app.memory
-        },
-        limits={
-            "cpu": app.cpu,
-            "memory": app.memory
-        }
+    container.resources = (
+        client.V1ResourceRequirements(
+            requests={
+                "cpu": app.cpu,
+                "memory": app.memory,
+            },
+            limits={
+                "cpu": app.cpu,
+                "memory": app.memory,
+            },
+        )
     )
 
     return api.replace_namespaced_deployment(
         name=app.name,
         namespace=app.namespace.name,
-        body=deployment
+        body=deployment,
     )
 
 
 def delete_app(app):
-    api = get_kubernetes_apps_api(app.namespace.cluster)
+    api = get_kubernetes_apps_api(
+        app.namespace.cluster
+    )
 
     return api.delete_namespaced_deployment(
         name=app.name,
-        namespace=app.namespace.name
+        namespace=app.namespace.name,
     )
 
 
 def get_app_pod(app):
-    api = get_kubernetes_api(app.namespace.cluster)
+    api = get_kubernetes_api(
+        app.namespace.cluster
+    )
 
     pods = api.list_namespaced_pod(
         namespace=app.namespace.name,
-        label_selector=f"app={app.name}"
+        label_selector=f"app={app.name}",
     )
 
     for pod in pods.items:
@@ -228,10 +263,22 @@ def get_app_pod(app):
     return None
 
 
-def copy_file_from_pod(app, pod_name, source_path, destination_path):
-    api = get_kubernetes_api(app.namespace.cluster)
+def copy_file_from_pod(
+    app,
+    pod_name,
+    source_path,
+    destination_path,
+):
+    api = get_kubernetes_api(
+        app.namespace.cluster
+    )
 
-    exec_command = ["tar", "czf", "-", source_path]
+    exec_command = [
+        "tar",
+        "czf",
+        "-",
+        source_path,
+    ]
 
     resp = stream(
         api.connect_get_namespaced_pod_exec,
@@ -242,7 +289,7 @@ def copy_file_from_pod(app, pod_name, source_path, destination_path):
         stdin=False,
         stdout=True,
         tty=False,
-        _preload_content=False
+        _preload_content=False,
     )
 
     with open(destination_path, "wb") as f:
@@ -250,23 +297,43 @@ def copy_file_from_pod(app, pod_name, source_path, destination_path):
             resp.update(timeout=5)
 
             if resp.peek_stdout():
-                f.write(resp.read_stdout(binary=True))
+                f.write(
+                    resp.read_stdout(
+                        binary=True
+                    )
+                )
 
             if resp.peek_stderr():
                 error_output = resp.read_stderr()
+
                 if error_output:
-                    raise Exception(f"Error copying from pod: {error_output}")
+                    raise Exception(
+                        f"Error copying from pod: "
+                        f"{error_output}"
+                    )
 
     resp.close()
 
 
-def create_periodic_backup(app, source_path, schedule):
+def create_periodic_backup(
+    app,
+    source_path,
+    schedule,
+):
     fields = schedule.split()
 
     if len(fields) != 5:
-        raise ValueError("Invalid cron expression")
+        raise ValueError(
+            "Invalid cron expression"
+        )
 
-    minute, hour, day_of_month, month_of_year, day_of_week = fields
+    (
+        minute,
+        hour,
+        day_of_month,
+        month_of_year,
+        day_of_week,
+    ) = fields
 
     crontab, _ = CrontabSchedule.objects.get_or_create(
         minute=minute,
@@ -278,7 +345,16 @@ def create_periodic_backup(app, source_path, schedule):
 
     PeriodicTask.objects.create(
         crontab=crontab,
-        name=f"scheduled-backup-{app.id}-{uuid.uuid4().hex[:8]}",
+        name=(
+            f"scheduled-backup-"
+            f"{app.id}-"
+            f"{uuid.uuid4().hex[:8]}"
+        ),
         task="api.tasks.run_scheduled_backup",
-        args=json.dumps([app.id, source_path]),
+        args=json.dumps(
+            [
+                app.id,
+                source_path,
+            ]
+        ),
     )

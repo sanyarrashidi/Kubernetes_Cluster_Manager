@@ -25,49 +25,106 @@ def clusters(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-
-            cluster = Cluster.objects.create(
-                name=data["name"],
-                address=data["address"],
-                token=data["token"],
-                ca_cert=data.get("ca_cert", ""),
-            )
-
-            try:
-                test_connection(cluster)
-            except ApiException as error:
-                cluster.delete()
-                return JsonResponse(
-                    {"error": f"Could not connect to cluster: {error.reason}"},
-                    status=400,
-                )
-            except Exception as error:
-                cluster.delete()
-                return JsonResponse(
-                    {"error": f"Could not connect to cluster: {error}"},
-                    status=400,
-                )
-
-            return JsonResponse(
-                {
-                    "id": cluster.id,
-                    "name": cluster.name,
-                    "address": cluster.address,
-                },
-                status=201,
-            )
-
         except json.JSONDecodeError:
             return JsonResponse(
                 {"error": "Invalid JSON"},
                 status=400,
             )
 
-        except KeyError as error:
+        required_fields = [
+            "name",
+            "address",
+            "token",
+        ]
+
+        for field in required_fields:
+            if not data.get(field):
+                return JsonResponse(
+                    {
+                        "error": (
+                            f"{field} is required"
+                        )
+                    },
+                    status=400,
+                )
+
+        if "ca_cert" in data:
             return JsonResponse(
-                {"error": f"Missing field: {error.args[0]}"},
+                {
+                    "error": (
+                        "CA certificates are not supported. "
+                        "Use the cluster address and token."
+                    )
+                },
                 status=400,
             )
+
+        cluster = Cluster.objects.create(
+            name=data["name"].strip(),
+            address=data["address"].strip(),
+            token=data["token"].strip(),
+        )
+
+        try:
+            test_connection(cluster)
+
+        except ApiException as error:
+            cluster.delete()
+
+            if error.status == 401:
+                return JsonResponse(
+                    {
+                        "error": (
+                            "Kubernetes authentication failed. "
+                            "Check the cluster token."
+                        )
+                    },
+                    status=401,
+                )
+
+            if error.status == 403:
+                return JsonResponse(
+                    {
+                        "error": (
+                            "The Kubernetes token is valid, "
+                            "but it does not have permission "
+                            "to list namespaces."
+                        )
+                    },
+                    status=403,
+                )
+
+            return JsonResponse(
+                {
+                    "error": (
+                        "Could not connect to cluster: "
+                        f"{error.reason}"
+                    )
+                },
+                status=502,
+            )
+
+        except Exception as error:
+            cluster.delete()
+
+            return JsonResponse(
+                {
+                    "error": (
+                        "Could not connect to cluster: "
+                        f"{error}"
+                    )
+                },
+                status=400,
+            )
+
+        return JsonResponse(
+            {
+                "id": cluster.id,
+                "name": cluster.name,
+                "address": cluster.address,
+            },
+            status=201,
+        )
 
     elif request.method == "GET":
         clusters = Cluster.objects.all()
@@ -81,7 +138,10 @@ def clusters(request):
             for cluster in clusters
         ]
 
-        return JsonResponse(data, safe=False)
+        return JsonResponse(
+            data,
+            safe=False,
+        )
 
     return JsonResponse(
         {"error": "Method not allowed"},
